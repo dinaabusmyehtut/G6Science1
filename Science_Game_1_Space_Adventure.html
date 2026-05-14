@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Space Adventure - Part 1</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f39c12;
+            --bg-color: #0b0d17;
+            --text-color: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                              radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                              radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            text-align: center;
+            position: relative;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        #timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+
+        .timer-red {
+            color: #e74c3c !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #question-text {
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .option-btn.correct {
+            background: #27ae60 !important;
+            border-color: #2ecc71 !important;
+        }
+
+        .option-btn.wrong {
+            background: #c0392b !important;
+            border-color: #e74c3c !important;
+        }
+
+        #essay-input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        #submit-essay {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        #feedback {
+            margin-top: 1rem;
+            font-weight: bold;
+            min-height: 1.5rem;
+        }
+
+        #score-screen {
+            display: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .score-val {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin: 1rem 0;
+        }
+
+        .restart-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="quiz-section">
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="timer">20</div>
+        <div id="question-text">Loading question...</div>
+        
+        <div id="options" class="options-container"></div>
+        
+        <div id="essay-container" class="hidden">
+            <textarea id="essay-input" rows="4" placeholder="Type your answer here..."></textarea>
+            <button id="submit-essay">Submit Answer</button>
+        </div>
+
+        <div id="feedback"></div>
+    </div>
+
+    <div id="score-screen">
+        <h1>Mission Complete!</h1>
+        <p>Your final score:</p>
+        <div class="score-val" id="final-score">0 / 0</div>
+        <p id="motivational-msg"></p>
+        <button class="restart-btn" onclick="location.reload()">Restart Mission</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+      {"type": "mcq", "question": "In winter, water falls due to .............. process", "options": ["Condensation", "Evaporation", "Precipitation", "Collection"], "answer": "Precipitation"},
+      {"type": "mcq", "question": "The distribution of ................ energy play an important role in evaporation process in water cycle", "options": ["Electrical", "Solar", "Thermal", "Sound"], "answer": "Solar"},
+      {"type": "mcq", "question": "All the following are considered as the main process in transferring water through water reservoirs except ...............", "options": ["Condensation", "Collection", "Evaporation", "Precipitation"], "answer": "Collection"},
+      {"type": "mcq", "question": "Leakage of water into groundwater reservoirs is due to the action of ...............", "options": ["Condensation", "Gravity", "Precipitation", "Evaporation"], "answer": "Gravity"},
+      {"type": "mcq", "question": "Both ................ and ....................process happen due to the decrease of thermal energy", "options": ["Melting- freezing", "Melting – condensation", "Freezing – condensation", "Melting- evaporation"], "answer": "Freezing – condensation"},
+      {"type": "mcq", "question": "The clouds are formed due to ................ process", "options": ["Melting", "Collection", "Condensation", "Freezing"], "answer": "Condensation"},
+      {"type": "mcq", "question": "The form of evaporation that takes place in the leaves is called .................", "options": ["Transpiration", "Collection", "Melting", "Freezing"], "answer": "Transpiration"},
+      {"type": "mcq", "question": "Gathering of water of rains to form streams, rivers or lakes is called ..................", "options": ["Precipitation", "Evaporation", "Collection", "Runoff"], "answer": "Collection"},
+      {"type": "mcq", "question": "Due to convection ................ air moves upward above .............. air", "options": ["Cold- hot", "Hot- cold", "Cold- warm", "Warm- hot"], "answer": "Hot- cold"},
+      {"type": "mcq", "question": "The air in the atmosphere heats up by the help of the .............", "options": ["Moon", "Heater", "Gravity", "Sun"], "answer": "Sun"},
+      {"type": "mcq", "question": "When a liquid is heated, it will..............and become less dense and ................", "options": ["Expand- heavier", "Contract lighter", "Expand-lighter", "Contract- heavier"], "answer": "Expand-lighter"},
+      {"type": "mcq", "question": "The weather in the area near the equator is ..............", "options": ["Hot and humid", "Hot and snowy", "Warm and humid", "Warm and snowy"], "answer": "Hot and humid"},
+      {"type": "mcq", "question": "Wind helps in transporting water through water cycle by carrying ...................", "options": ["Sand grains", "Small rocks", "Plant leaves", "Water vapor"], "answer": "Water vapor"},
+      {"type": "mcq", "question": "During washing of hands, the water falls from the tap toward your hand by the effect of ............", "options": ["Condensation", "Gravity", "Freezing"], "answer": "Gravity"},
+      {"type": "mcq", "question": "Wind is produced by the help of ....................", "options": ["Water turbine", "Electric generator", "Solar radiation", "Electric motor"], "answer": "Solar radiation"},
+      {"type": "mcq", "question": "The ............. air causes the formation of many desert areas around the Earh surface", "options": ["Cold", "Moisted", "Dry", "Dusty"], "answer": "Dry"},
+      {"type": "mcq", "question": "When the warm air contains large amount of .................. the warm air loses it in the form of rain", "options": ["Ice", "Liquid water", "Water vapor"], "answer": "Water vapor"},
+      {"type": "mcq", "question": "Desert farming depends on the maximum use of …….., as its quantity is very small", "options": ["Sand", "Sunlight", "Water", "winds"], "answer": "Water"},
+      {"type": "mcq", "question": "the density of cold dry air is ……… that of hot humid air.", "options": ["More than", "Equal to", "Less than", "Similar to"], "answer": "More than"},
+      {"type": "mcq", "question": "The side of coastal mountain ranges in which air moves up when hitting a mountain is the …….. side, while the other side is the ……….. side", "options": ["Wet – dry", "Dry – wet", "Upper – lower", "Lower – upper"], "answer": "Wet – dry"},
+      {"type": "mcq", "question": "The change of water from liquid state to gas state is known as ………. Process", "options": ["Evaporation", "Melting", "Condensation", "Freezing"], "answer": "Evaporation"},
+      {"type": "mcq", "question": "The barometer is used to measure ………", "options": ["Air temperature", "Atmospheric pressure", "Mass", "length"], "answer": "Atmospheric pressure"},
+      {"type": "mcq", "question": "heat transfers from the ……. Object to the …… object", "options": ["big – small", "small – big", "hot – cold", "cold - hot"], "answer": "hot – cold"},
+      {"type": "mcq", "question": "at night. When the sun sets, on a beach ………", "options": ["the temperature of both the land and water increases", "the temperature of both the land and the water decreases", "the temperature of the land increases, while the temperature of water decreases", "the temperature of the land decreases, while the temperature of water increases"], "answer": "the temperature of both the land and the water decreases"},
+      {"type": "mcq", "question": "the form of energy that flows from a hot object to a cold object is called …….", "options": ["Sound", "Thermal", "Magnetic", "Potential"], "answer": "Thermal"},
+      {"type": "tf", "question": "Drying up the water in the large Salt Lake in turkey is due to condensation process", "answer": false},
+      {"type": "tf", "question": "Flamingos migrate to the large salty lake in turkey when the weather is cold", "answer": false},
+      {"type": "tf", "question": "Hottest regions are regions in which evaporation process is the greatest", "answer": true},
+      {"type": "tf", "question": "Falling hail in coolest regions is an example of evaporation process", "answer": false},
+      {"type": "tf", "question": "The two factors which control the movement of water in the water cycle are gravity force and solar energy", "answer": true},
+      {"type": "tf", "question": "Melting and transpiration process occurs only by cooling", "answer": false},
+      {"type": "tf", "question": "Clouds are made up of millions of tiny droplets", "answer": true},
+      {"type": "tf", "question": "As a result of low temperature, water returns back into water vapor", "answer": false},
+      {"type": "tf", "question": "Water reservoirs on Earth includes seas and oceans only", "answer": false},
+      {"type": "tf", "question": "Convection causes the movement of low-density air above high density air", "answer": true},
+      {"type": "tf", "question": "Convection currents in Earth atmosphere help in determining the regional climate", "answer": true},
+      {"type": "tf", "question": "The heat of sun transfers through the space to Earth’s atmosphere by convection", "answer": false},
+      {"type": "tf", "question": "There is a very little rain in desert area", "answer": true},
+      {"type": "tf", "question": "The weather near the area of equator is very cold due to falling of sun rays’ perpendicular on Earth’s surface", "answer": false},
+      {"type": "tf", "question": "Due to radiation currents, warm water moves above cold water", "answer": false},
+      {"type": "tf", "question": "Deserts are formed by the effect of moist air", "answer": false},
+      {"type": "tf", "question": "Wind is caused by the continuous exchange between warm and cold water", "answer": false},
+      {"type": "tf", "question": "People in desert areas face a lot of challenges in desert framing", "answer": true},
+      {"type": "tf", "question": "Precipitation occurs after condensation of water vapor in the sky", "answer": true},
+      {"type": "tf", "question": "The properties of the atmosphere at the top of the mountain and at its bottom are similar", "answer": false},
+      {"type": "tf", "question": "When the hot and humid air meet the cold and dry air, the hot air rises", "answer": true},
+      {"type": "tf", "question": "The sand absorbs heat slower than water during daytime", "answer": false},
+      {"type": "tf", "question": "If the temperature of the sand in a desert is 42ᵒc at noon, its temperature may reach 55ᵒc at night", "answer": false},
+      {"type": "tf", "question": "Mapping data allows meteorologists to represent data about the weather in different places", "answer": true},
+      {"type": "essay", "question": "The process in which matter changes from gas state to liquid state", "answer": "Condensation", "keywords": ["condensation", "gas to liquid"]},
+      {"type": "essay", "question": "The step in which water flows along the Earth's surface into the river then to the sea and ocean", "answer": "runoff", "keywords": ["runoff", "flows along surface"]},
+      {"type": "essay", "question": "They are the places of storing water on Earth", "answer": "water reservoirs", "keywords": ["water reservoirs", "storing water"]},
+      {"type": "essay", "question": "The force which causes moving down of water from higher places to lower places", "answer": "gravity", "keywords": ["gravity", "moving down"]},
+      {"type": "essay", "question": "It is a form of evaporation that takes place through the stomata which are found in plant leaved", "answer": "transpiration", "keywords": ["transpiration", "stomata", "leaves"]},
+      {"type": "essay", "question": "It is the method by which heat transfers within liquids and gases where hot molecules rise upward while colder molecules fall down", "answer": "convection", "keywords": ["convection", "liquids and gases", "hot molecules rise", "cold molecules fall"]},
+      {"type": "essay", "question": "It is caused when air warmed by the solar radiation rises and then replaced by cooler air that flows by nearby areas", "answer": "wind", "keywords": ["wind", "solar radiation", "cooler air replaces"]},
+      {"type": "essay", "question": "It is the main source that is responsible for warming air and forming wind", "answer": "Sun", "keywords": ["sun", "warming air", "forming wind"]},
+      {"type": "essay", "question": "A scientist who studies the atmosphere to understand Earth’s weather", "answer": "Meteorologist", "keywords": ["meteorologist", "studies atmosphere", "weather"]},
+      {"type": "essay", "question": "A side of mountain ranges at coastal regions that faces the coast", "answer": "Wet side", "keywords": ["wet side", "faces the coast"]},
+      {"type": "essay", "question": "Science that studies the weather conditions", "answer": "Meteorology", "keywords": ["meteorology", "studies weather"]},
+      {"type": "essay", "question": "A device used to measure temperature", "answer": "Thermometer", "keywords": ["thermometer", "measure temperature"]},
+      {"type": "essay", "question": "It is the weight of the air above an area", "answer": "Atmospheric pressure", "keywords": ["atmospheric pressure", "weight of air"]},
+      {"type": "essay", "question": "A phenomenon in which the condensed water vapor falls on the Earth’s surface in the form of rain, snow, sleet or hail", "answer": "Precipitation", "keywords": ["precipitation", "rain", "snow", "sleet", "hail"]},
+      {"type": "essay", "question": "Give reason: Changing of water from one state to another", "answer": "Due to gaining or losing of thermal energy", "keywords": ["gaining", "losing", "thermal energy", "heat"]},
+      {"type": "essay", "question": "Give reason: Moving down of glaciers from the top of the mountain to the bottom", "answer": "Due to the effect of gravity on glaciers", "keywords": ["gravity", "glaciers"]},
+      {"type": "essay", "question": "Give reason: About 10% of water vapor in air comes from plants", "answer": "Due to transpiration process which happens by plants", "keywords": ["transpiration", "plants"]},
+      {"type": "essay", "question": "Give reason: The weather in the area near the equator is hot", "answer": "Because the sun rays fall perpendicular on Earth’s surface giving high effect of heat", "keywords": ["sun rays", "perpendicular", "heat"]},
+      {"type": "essay", "question": "Give reason: The formation of wind is determined by the amount of solar radiation received by the Earth", "answer": "Because warm air rises up when it is heated by solar radiation, and it is replaced by cooler air from nearby areas", "keywords": ["warm air rises", "solar radiation", "cooler air replaces"]},
+      {"type": "essay", "question": "Give reason: Hot air moves up, while cold air moves down", "answer": "Because hot air has low density while cold air has high density", "keywords": ["hot air", "low density", "cold air", "high density"]},
+      {"type": "essay", "question": "Give reason: At noon, we may not be able to stand barefoot on the sand of a beach in summer, but we can swim in the sea water", "answer": "Because sand is heated up faster than water", "keywords": ["sand", "heated faster", "water"]},
+      {"type": "essay", "question": "What is meant by: Soil pores", "answer": "Spaces between soil particles that are filled with air or water.", "keywords": ["spaces", "soil particles", "air", "water"]},
+      {"type": "essay", "question": "What is meant by: Genetic traits", "answer": "Traits that are passed from parents to offspring and controlled by genes/genetic factors.", "keywords": ["traits", "parents to offspring", "genes", "genetic factors"]},
+      {"type": "essay", "question": "What is meant by: Humus", "answer": "Organic material rich in nutrients formed by the decomposition of dead organisms.", "keywords": ["organic material", "nutrients", "decomposition", "dead organisms"]},
+      {"type": "essay", "question": "What is meant by: Decomposers", "answer": "Organisms such as fungi, bacteria and earthworms that break down dead plants and animals into nutrients.", "keywords": ["organisms", "break down", "dead plants", "dead animals", "nutrients"]},
+      {"type": "essay", "question": "What is meant by: Soil", "answer": "The loose layer that covers Earth's surface/crust.", "keywords": ["loose layer", "Earth's surface", "crust"]},
+      {"type": "essay", "question": "What is meant by: Adaptation", "answer": "A process or trait that helps a living organism survive in its environment.", "keywords": ["process", "trait", "survive", "environment"]}
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let timer;
+    let timeLeft;
+    let isAnswered = false;
+
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options');
+    const essayContainer = document.getElementById('essay-container');
+    const essayInput = document.getElementById('essay-input');
+    const submitEssayBtn = document.getElementById('submit-essay');
+    const feedback = document.getElementById('feedback');
+    const timerDisplay = document.getElementById('timer');
+    const progressBar = document.getElementById('progress-bar');
+    const quizSection = document.getElementById('quiz-section');
+    const scoreScreen = document.getElementById('score-screen');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const motivationalMsg = document.getElementById('motivational-msg');
+
+    function startTimer(seconds) {
+        timeLeft = seconds;
+        timerDisplay.textContent = timeLeft;
+        timerDisplay.classList.remove('timer-red');
+        
+        clearInterval(timer);
+        timer = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            
+            if (timeLeft <= 5) {
+                timerDisplay.classList.add('timer-red');
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                if (!isAnswered) {
+                    handleTimeout();
+                }
+            }
+        }, 1000);
+    }
+
+    function handleTimeout() {
+        isAnswered = true;
+        feedback.textContent = "Time's up! Moving to next question...";
+        feedback.style.color = "#e74c3c";
+        setTimeout(nextQuestion, 2000);
+    }
+
+    function loadQuestion() {
+        isAnswered = false;
+        feedback.textContent = "";
+        essayInput.value = "";
+        
+        const q = questions[currentQuestionIndex];
+        questionText.textContent = `${currentQuestionIndex + 1}. ${q.question}`;
+        
+        progressBar.style.width = `${((currentQuestionIndex) / questions.length) * 100}%`;
+
+        if (q.type === 'mcq' || q.type === 'tf') {
+            optionsContainer.classList.remove('hidden');
+            essayContainer.classList.add('hidden');
+            optionsContainer.innerHTML = '';
+            
+            const opts = q.type === 'tf' ? [true, false] : q.options;
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = q.type === 'tf' ? (opt ? "True" : "False") : opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                optionsContainer.appendChild(btn);
+            });
+            startTimer(20);
+        } else {
+            optionsContainer.classList.add('hidden');
+            essayContainer.classList.remove('hidden');
+            startTimer(90);
+        }
+    }
+
+    function checkAnswer(selected, btn) {
+        if (isAnswered) return;
+        isAnswered = true;
+        clearInterval(timer);
+
+        const q = questions[currentQuestionIndex];
+        const correct = q.answer;
+
+        if (selected === correct) {
+            score++;
+            btn.classList.add('correct');
+            feedback.textContent = "Correct! Great job explorer!";
+            feedback.style.color = "#2ecc71";
+        } else {
+            btn.classList.add('wrong');
+            feedback.textContent = `Incorrect. The correct answer was: ${q.type === 'tf' ? (correct ? "True" : "False") : correct}`;
+            feedback.style.color = "#e74c3c";
+        }
+
+        setTimeout(nextQuestion, 2000);
+    }
+
+    // Semantic evaluation for essay questions
+    function evaluateEssay(studentAnswer, modelAnswer, keywords) {
+        const studentLower = studentAnswer.toLowerCase();
+        const modelLower = modelAnswer.toLowerCase();
+        
+        // Simple semantic check: check for keywords
+        let matches = 0;
+        keywords.forEach(kw => {
+            if (studentLower.includes(kw.toLowerCase())) {
+                matches++;
+            }
+        });
+
+        const scorePercentage = matches / keywords.length;
+        
+        if (scorePercentage >= 0.5 || studentLower.includes(modelLower)) {
+            return {
+                correct: true,
+                feedback: "Excellent! You've captured the key scientific concepts."
+            };
+        } else {
+            return {
+                correct: false,
+                feedback: `Keep trying! A good answer would mention: ${keywords.join(', ')}.`
+            };
+        }
+    }
+
+    submitEssayBtn.onclick = () => {
+        if (isAnswered) return;
+        const studentAnswer = essayInput.value.trim();
+        if (!studentAnswer) return;
+
+        isAnswered = true;
+        clearInterval(timer);
+
+        const q = questions[currentQuestionIndex];
+        const result = evaluateEssay(studentAnswer, q.answer, q.keywords);
+
+        if (result.correct) {
+            score++;
+            feedback.style.color = "#2ecc71";
+        } else {
+            feedback.style.color = "#e74c3c";
+        }
+        feedback.textContent = result.feedback;
+
+        setTimeout(nextQuestion, 3000);
+    };
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questions.length) {
+            loadQuestion();
+        } else {
+            showScore();
+        }
+    }
+
+    function showScore() {
+        quizSection.classList.add('hidden');
+        scoreScreen.style.display = 'block';
+        finalScoreDisplay.textContent = `${score} / ${questions.length}`;
+        
+        const percentage = (score / questions.length) * 100;
+        if (percentage >= 80) {
+            motivationalMsg.textContent = "Outstanding! You are a true Science Master! 🌟";
+        } else if (percentage >= 50) {
+            motivationalMsg.textContent = "Good job! You've completed the mission, but there's more to explore! 🚀";
+        } else {
+            motivationalMsg.textContent = "Mission complete. Keep studying and you'll reach the stars next time! 🔭";
+        }
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
